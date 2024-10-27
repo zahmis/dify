@@ -1,3 +1,6 @@
+import json
+from collections import defaultdict
+
 import pytz
 from flask_login import current_user
 
@@ -139,3 +142,71 @@ class AgentService:
             )
 
         return result
+
+    @classmethod
+    def download_agent_logs(cls, app_id: str) -> dict:
+        messages = (
+            db.session.query(
+                Message.message,
+                Message.answer,
+                Message.conversation_id,
+                Message.error
+            )
+            .filter(Message.app_id == app_id)
+            .order_by(Message.conversation_id, Message.created_at)
+            .all()
+        )
+        
+        introduction_row = db.session.query(Conversation.introduction).filter(Conversation.app_id == app_id).first()
+        introduction = introduction_row.introduction if introduction_row else None
+
+        if not messages:
+            raise ValueError(f"No messages found for app: {app_id}")
+        
+        error_messages = [msg for msg in messages if msg.error is not None]
+    
+        if error_messages:
+            errors = [msg.error for msg in error_messages]
+            raise ValueError(f"不正な会話ログがあります: {errors}")
+
+        system_message = None
+        conversations = defaultdict(list)
+
+        for (
+            message,
+            answer,
+            conversation_id,
+            error,
+        ) in messages:
+            message_data = json.loads(message) if isinstance(message, str) else message
+
+            if message_data[0]["role"] == "system" and system_message is None:
+                system_message = message_data[0]
+
+            user_answer = message_data[-1]["text"]
+            
+            if not conversations[conversation_id]:
+                conversations[conversation_id].append(
+                    {
+                        "question": introduction,
+                        "answer": user_answer,
+                    }
+                )
+                
+                conversations[conversation_id].append(
+                    {
+                        "question": answer,
+                        "answer": None,
+                    }
+                )
+            else:
+                conversations[conversation_id][-1]["answer"] = user_answer
+                if answer:
+                    conversations[conversation_id].append(
+                        {
+                            "question": answer,
+                            "answer": None,
+                        }
+                    )
+
+        return {"system_message": system_message, "conversations": dict(conversations)}

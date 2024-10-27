@@ -7,14 +7,14 @@ import { Pagination } from 'react-headless-pagination'
 import { useDebounce } from 'ahooks'
 import { omit } from 'lodash-es'
 import dayjs from 'dayjs'
-import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
+import { ArrowDownTrayIcon, ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
 import { Trans, useTranslation } from 'react-i18next'
 import Link from 'next/link'
 import List from './list'
 import Filter from './filter'
 import s from './style.module.css'
 import Loading from '@/app/components/base/loading'
-import { fetchChatConversations, fetchCompletionConversations } from '@/service/log'
+import { downloadAgentLog, fetchChatConversations, fetchCompletionConversations } from '@/service/log'
 import { APP_PAGE_LIMIT } from '@/config'
 import type { App, AppMode } from '@/types/app'
 export type ILogsProps = {
@@ -65,6 +65,17 @@ const Logs: FC<ILogsProps> = ({ appDetail }) => {
   // Get the app type first
   const isChatMode = appDetail.mode !== 'completion'
 
+  const downloadLogs = async () => {
+    const data = await downloadAgentLog(appDetail.id)
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'questionnaireLogs.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const query = {
     page: currPage + 1,
     limit: APP_PAGE_LIMIT,
@@ -105,7 +116,15 @@ const Logs: FC<ILogsProps> = ({ appDetail }) => {
     <div className='flex flex-col h-full'>
       <p className='text-text-tertiary system-sm-regular'>{t('appLog.description')}</p>
       <div className='flex flex-col py-4 flex-1'>
-        <Filter isChatMode={isChatMode} appId={appDetail.id} queryParams={queryParams} setQueryParams={setQueryParams} />
+        <div className='flex justify-between items-start mb-4'>
+          <Filter isChatMode={isChatMode} appId={appDetail.id} queryParams={queryParams} setQueryParams={setQueryParams} />
+          <button onClick={downloadLogs} className='bg-primary-600 text-white rounded-md px-4 py-2 ml-4'>
+            <div className='flex items-center'>
+              <ArrowDownTrayIcon className='h-4 w-4 mr-2' />
+              <span>ログをエクスポート</span>
+            </div>
+          </button>
+        </div>
         {total === undefined
           ? <Loading type='app' />
           : total > 0
