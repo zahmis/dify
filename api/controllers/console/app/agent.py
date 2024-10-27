@@ -26,4 +26,13 @@ class AgentLogApi(Resource):
         return AgentService.get_agent_logs(app_model, args["conversation_id"], args["message_id"])
 
 
+class AgentLogDownloadApi(Resource):
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self, app_id):
+        return AgentService.download_agent_logs(app_id)
+
+
 api.add_resource(AgentLogApi, "/apps/<uuid:app_id>/agent/logs")
+api.add_resource(AgentLogDownloadApi, '/apps/<uuid:app_id>/agent/logs/download')
