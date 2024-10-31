@@ -243,6 +243,7 @@ services:
   # API service
   api:
     image: ghcr.io/zahmis/dify-api:latest
+    platform: linux/x86_64
     restart: always
     environment:
       # Use the shared environment variables.
@@ -263,6 +264,7 @@ services:
   # The Celery worker for processing the queue.
   worker:
     image: ghcr.io/zahmis/dify-api:latest
+    platform: linux/x86_64
     restart: always
     environment:
       # Use the shared environment variables.
