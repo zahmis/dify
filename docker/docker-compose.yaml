@@ -281,8 +281,7 @@ services:
 
   # Frontend web application.
   web:
-    image: ghcr.io/zahmis/dify:latest
-    restart: always
+    image: ghcr.io/zahmis/dify-web:latest
     environment:
       CONSOLE_API_URL: ${CONSOLE_API_URL:-}
       APP_API_URL: ${APP_API_URL:-}
